@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 
-from src.checkout import checkout_router
+from src.checkout import checkoutRouter
 
 app = FastAPI()
 
-app.include_router(checkout_router.router)
+app.include_router(checkoutRouter.router)
 
 @app.get("/")
 def root():
