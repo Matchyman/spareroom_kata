@@ -1,2 +1,6 @@
 /venv
+/vscode
 /__pycache__
+src/checkout/__pycache__/checkoutRouter.cpython-311.pyc
+src/checkout/__pycache__/functions.cpython-311.pyc
+src/dao/__pycache__/daoRoutines.cpython-311.pyc
