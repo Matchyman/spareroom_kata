@@ -1,0 +1,22 @@
+{
+    "a":{
+        "price": 50,
+        "offer":{
+            "amount": 3,
+            "price": 140
+        }
+    },
+    "b":{
+        "price":35,
+        "offer":{
+            "amount":2,
+            "price": 60
+        }
+    },
+    "c":{
+        "price":25
+    },
+    "d":{
+        "price": 12
+    }
+}
