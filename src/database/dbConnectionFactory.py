@@ -1,0 +1,49 @@
+import sqlite3
+import yaml
+import logging
+from yaml.loader import SafeLoader
+
+class DBConnectionFactory:
+    
+    def __init__(self):
+        self.config = {}
+        with open("config\\config.yml", "r") as file:
+            self.config = yaml.load(file, Loader=SafeLoader)
+        self.logger = logging.getLogger()
+        self.dbpath = self.config.get("dbpath")
+            
+    def connect(self) -> sqlite3.Connection:
+        try:
+            con = sqlite3.connect(self.dbpath)
+            return con
+        except sqlite3.OperationalError as ce:
+            self.logger.warning(f"WARNING: No connection made with DB: {self.config.get('dbpath')}, Error: {ce}")
+        except Exception as e:
+            self.logger.error(f"ERROR: {e} in dbConnectionFactory - connect function")
+            
+    def addData(self, con: sqlite3.Connection, query: str):
+        cur = con.cursor()
+        try:
+            cur.execute(query)
+            con.commit()
+        except sqlite3.DatabaseError as dberr:
+            raise sqlite3.DatabaseError(dberr)
+            
+           
+    def checkTable(self, con: sqlite3.Connection, table:str):
+        cur = con.cursor()
+        res = cur.execute(f"SELECT name FROM sqlite_master WHERE type = 'table' AND name = '{table}'")
+        if res.fetchall() == []:
+            return False
+        return True
+
+    def getData(self, con:sqlite3.Connection, query):
+        cur = con.cursor()
+        res = cur.execute(query)
+        return res.fetchall()
+    
+    def closeConnection(self, con:sqlite3.Connection):
+        con.close()
+
+
+    
