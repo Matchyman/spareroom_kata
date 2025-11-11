@@ -21,28 +21,31 @@ class DBConnectionFactory:
         except Exception as e:
             self.logger.error(f"ERROR: {e} in dbConnectionFactory - connect function")
             
-    def addData(self, con: sqlite3.Connection, query: str):
-        cur = con.cursor()
-        try:
-            cur.execute(query)
-            con.commit()
-        except sqlite3.DatabaseError as dberr:
-            raise sqlite3.DatabaseError(dberr)
+    def add_data(self, con: sqlite3.Connection, query: str, table:str):
+        if self.check_table(con=con, table=table):
+            cur = con.cursor()
+            try:
+                cur.execute(query)
+                con.commit()
+            except sqlite3.DatabaseError as dberr:
+                raise sqlite3.DatabaseError(dberr)
+        else:
+            raise sqlite3.DatabaseError(f"No table found for : {table}")
             
            
-    def checkTable(self, con: sqlite3.Connection, table:str):
+    def check_table(self, con: sqlite3.Connection, table:str):
         cur = con.cursor()
         res = cur.execute(f"SELECT name FROM sqlite_master WHERE type = 'table' AND name = '{table}'")
         if res.fetchall() == []:
             return False
         return True
 
-    def getData(self, con:sqlite3.Connection, query):
+    def get_data(self, con:sqlite3.Connection, query):
         cur = con.cursor()
         res = cur.execute(query)
         return res.fetchall()
     
-    def closeConnection(self, con:sqlite3.Connection):
+    def close_connection(self, con:sqlite3.Connection):
         con.close()
 
 
