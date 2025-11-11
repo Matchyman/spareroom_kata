@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
 import sys
-
-
 from src.checkout import checkoutRouter
 
 app = FastAPI()
@@ -20,7 +18,6 @@ def main(args = ""):
         uvicorn.run("main:app", host="localhost", port=8000, reload=True, log_config="config\dev_log_conf.yml")
 
 if __name__ == "__main__":
-    print(len(sys.argv))
     if len(sys.argv) > 1:
         arg = sys.argv[1]
         main(arg)

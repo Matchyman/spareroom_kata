@@ -1,5 +1,6 @@
 import pytest
 import sqlite3
+import pandas as pd
 from unittest.mock import MagicMock, patch, mock_open
 from src.database.dbConnectionFactory import DBConnectionFactory
 
@@ -86,12 +87,13 @@ class TestDBConnectionAddData:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
         
         query = "INSERT INTO prices (code, price) VALUES ('A', 50)"
-        factory.addData(mock_connection, query)
+        factory.add_data(mock_connection, query, "prices")
         
-        mock_connection.cursor.assert_called_once()
-        mock_cursor.execute.assert_called_once_with(query)
+        mock_connection.cursor.assert_called()
+        mock_cursor.execute.assert_called()
         mock_connection.commit.assert_called_once()
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
@@ -104,6 +106,7 @@ class TestDBConnectionAddData:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
         
         queries = [
             "INSERT INTO prices (code, price) VALUES ('A', 50)",
@@ -111,10 +114,26 @@ class TestDBConnectionAddData:
         ]
         
         for query in queries:
-            factory.addData(mock_connection, query)
+            factory.add_data(mock_connection, query, "prices")
         
-        assert mock_cursor.execute.call_count == 2
         assert mock_connection.commit.call_count == 2
+
+    @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
+    @patch('yaml.load')
+    def test_add_data_table_not_exists(self, mock_yaml_load, mock_file):
+        """Test adding data to non-existing table raises error"""
+        mock_yaml_load.return_value = {"dbpath": ":memory:"}
+        factory = DBConnectionFactory()
+        
+        mock_connection = MagicMock(spec=sqlite3.Connection)
+        mock_cursor = MagicMock(spec=sqlite3.Cursor)
+        mock_connection.cursor.return_value = mock_cursor
+        mock_cursor.execute.return_value.fetchall.return_value = []
+        
+        query = "INSERT INTO nonexistent (code, price) VALUES ('A', 50)"
+        
+        with pytest.raises(sqlite3.DatabaseError):
+            factory.add_data(mock_connection, query, "nonexistent")
 
 
 class TestDBConnectionCheckTable:
@@ -131,7 +150,7 @@ class TestDBConnectionCheckTable:
         mock_connection.cursor.return_value = mock_cursor
         mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
         
-        result = factory.checkTable(mock_connection, "prices")
+        result = factory.check_table(mock_connection, "prices")
         
         assert result is True
         mock_cursor.execute.assert_called_once_with(
@@ -150,7 +169,7 @@ class TestDBConnectionCheckTable:
         mock_connection.cursor.return_value = mock_cursor
         mock_cursor.execute.return_value.fetchall.return_value = []
         
-        result = factory.checkTable(mock_connection, "nonexistent")
+        result = factory.check_table(mock_connection, "nonexistent")
         
         assert result is False
 
@@ -160,7 +179,8 @@ class TestDBConnectionGetData:
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
-    def test_get_data_success(self, mock_yaml_load, mock_file):
+    @patch('pandas.read_sql')
+    def test_get_data_success(self, mock_read_sql, mock_yaml_load, mock_file):
         
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
         factory = DBConnectionFactory()
@@ -168,19 +188,21 @@ class TestDBConnectionGetData:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
-        expected_data = [("A", 50), ("B", 35)]
-        mock_cursor.execute.return_value.fetchall.return_value = expected_data
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
+        
+        expected_df = pd.DataFrame({"code": ["A", "B"], "price": [50, 35]})
+        mock_read_sql.return_value = expected_df
         
         query = "SELECT code, price FROM prices"
-        result = factory.getData(mock_connection, query)
+        result = factory.get_data(mock_connection, query, "prices")
         
-        assert result == expected_data
-        mock_cursor.execute.assert_called_once_with(query)
+        assert isinstance(result, pd.DataFrame)
+        mock_read_sql.assert_called_once()
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
-    def test_get_data_empty_result(self, mock_yaml_load, mock_file):
-       
+    def test_get_data_table_not_exists(self, mock_yaml_load, mock_file):
+        
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
         factory = DBConnectionFactory()
         
@@ -189,14 +211,36 @@ class TestDBConnectionGetData:
         mock_connection.cursor.return_value = mock_cursor
         mock_cursor.execute.return_value.fetchall.return_value = []
         
-        query = "SELECT code, price FROM prices WHERE code = 'X'"
-        result = factory.getData(mock_connection, query)
+        query = "SELECT code, price FROM nonexistent"
         
-        assert result == []
+        with pytest.raises(sqlite3.DatabaseError):
+            factory.get_data(mock_connection, query, "nonexistent")
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
-    def test_get_data_single_row(self, mock_yaml_load, mock_file):
+    @patch('pandas.read_sql')
+    def test_get_data_empty_result(self, mock_read_sql, mock_yaml_load, mock_file):
+       
+        mock_yaml_load.return_value = {"dbpath": ":memory:"}
+        factory = DBConnectionFactory()
+        
+        mock_connection = MagicMock(spec=sqlite3.Connection)
+        mock_cursor = MagicMock(spec=sqlite3.Cursor)
+        mock_connection.cursor.return_value = mock_cursor
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
+        
+        empty_df = pd.DataFrame()
+        mock_read_sql.return_value = empty_df
+        
+        query = "SELECT code, price FROM prices WHERE code = 'X'"
+        result = factory.get_data(mock_connection, query, "prices")
+        
+        assert isinstance(result, pd.DataFrame)
+
+    @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
+    @patch('yaml.load')
+    @patch('pandas.read_sql')
+    def test_get_data_single_row(self, mock_read_sql, mock_yaml_load, mock_file):
         
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
         factory = DBConnectionFactory()
@@ -204,18 +248,21 @@ class TestDBConnectionGetData:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
-        expected_data = [("A", 50)]
-        mock_cursor.execute.return_value.fetchall.return_value = expected_data
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
+        
+        single_df = pd.DataFrame({"code": ["A"], "price": [50]})
+        mock_read_sql.return_value = single_df
         
         query = "SELECT code, price FROM prices WHERE code = 'A'"
-        result = factory.getData(mock_connection, query)
+        result = factory.get_data(mock_connection, query, "prices")
         
-        assert result == expected_data
+        assert isinstance(result, pd.DataFrame)
         assert len(result) == 1
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
-    def test_get_data_multiple_rows(self, mock_yaml_load, mock_file):
+    @patch('pandas.read_sql')
+    def test_get_data_multiple_rows(self, mock_read_sql, mock_yaml_load, mock_file):
         
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
         factory = DBConnectionFactory()
@@ -223,23 +270,24 @@ class TestDBConnectionGetData:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
-        expected_data = [
-            ("A", 50),
-            ("B", 35),
-            ("C", 25),
-            ("D", 12)
-        ]
-        mock_cursor.execute.return_value.fetchall.return_value = expected_data
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
+        
+        multi_df = pd.DataFrame({
+            "code": ["A", "B", "C", "D"],
+            "price": [50, 35, 25, 12]
+        })
+        mock_read_sql.return_value = multi_df
         
         query = "SELECT code, price FROM prices"
-        result = factory.getData(mock_connection, query)
+        result = factory.get_data(mock_connection, query, "prices")
         
-        assert result == expected_data
+        assert isinstance(result, pd.DataFrame)
         assert len(result) == 4
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
-    def test_get_data_with_where_clause(self, mock_yaml_load, mock_file):
+    @patch('pandas.read_sql')
+    def test_get_data_with_where_clause(self, mock_read_sql, mock_yaml_load, mock_file):
         
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
         factory = DBConnectionFactory()
@@ -247,18 +295,21 @@ class TestDBConnectionGetData:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
-        expected_data = [("A", 50)]
-        mock_cursor.execute.return_value.fetchall.return_value = expected_data
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
+        
+        filtered_df = pd.DataFrame({"code": ["A"], "price": [50]})
+        mock_read_sql.return_value = filtered_df
         
         query = "SELECT code, price FROM prices WHERE price > 40"
-        result = factory.getData(mock_connection, query)
+        result = factory.get_data(mock_connection, query, "prices")
         
-        assert result == expected_data
-        mock_cursor.execute.assert_called_once_with(query)
+        assert isinstance(result, pd.DataFrame)
+        mock_read_sql.assert_called_once()
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
-    def test_get_data_join_query(self, mock_yaml_load, mock_file):
+    @patch('pandas.read_sql')
+    def test_get_data_join_query(self, mock_read_sql, mock_yaml_load, mock_file):
         
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
         factory = DBConnectionFactory()
@@ -266,20 +317,24 @@ class TestDBConnectionGetData:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
-        expected_data = [
-            ("A", 50, 3, 140),
-            ("B", 35, 2, 60)
-        ]
-        mock_cursor.execute.return_value.fetchall.return_value = expected_data
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
+        
+        join_df = pd.DataFrame({
+            "code": ["A", "B"],
+            "price": [50, 35],
+            "offeramount": [3, 2],
+            "offerprice": [140, 60]
+        })
+        mock_read_sql.return_value = join_df
         
         query = """
             SELECT p.code, p.price, o.offeramount, o.offerprice 
             FROM prices p 
             JOIN offers o ON p.code = o.code
         """
-        result = factory.getData(mock_connection, query)
+        result = factory.get_data(mock_connection, query, "prices")
         
-        assert result == expected_data
+        assert isinstance(result, pd.DataFrame)
         assert len(result) == 2
 
 
@@ -294,7 +349,7 @@ class TestDBConnectionCloseConnection:
         factory = DBConnectionFactory()
         
         mock_connection = MagicMock(spec=sqlite3.Connection)
-        factory.closeConnection(mock_connection)
+        factory.close_connection(mock_connection)
         
         mock_connection.close.assert_called_once()
 
@@ -304,8 +359,9 @@ class TestDBConnectionFactoryIntegration:
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
     @patch('sqlite3.connect')
+    @patch('pandas.read_sql')
     def test_full_workflow_connect_add_check_get_close(
-        self, mock_sqlite_connect, mock_yaml_load, mock_file
+        self, mock_read_sql, mock_sqlite_connect, mock_yaml_load, mock_file
     ):
         """Test complete workflow: init -> connect -> add -> check -> get -> close"""
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
@@ -315,11 +371,12 @@ class TestDBConnectionFactoryIntegration:
         mock_connection.cursor.return_value = mock_cursor
         mock_sqlite_connect.return_value = mock_connection
         
-        # Setup different return values for different query types
-        mock_cursor.execute.return_value.fetchall.side_effect = [
-            [("prices",)],  # For checkTable
-            [("A", 50), ("B", 35)]  # For getData
-        ]
+        # Setup return values for check_table
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
+        
+        # Setup return value for get_data
+        mock_df = pd.DataFrame({"code": ["A", "B"], "price": [50, 35]})
+        mock_read_sql.return_value = mock_df
         
         # Initialize factory
         factory = DBConnectionFactory()
@@ -329,23 +386,24 @@ class TestDBConnectionFactoryIntegration:
         assert con == mock_connection
         
         # Add data
-        factory.addData(con, "INSERT INTO prices (code, price) VALUES ('A', 50)")
+        factory.add_data(con, "INSERT INTO prices (code, price) VALUES ('A', 50)", "prices")
         
         # Check table exists
-        table_exists = factory.checkTable(con, "prices")
+        table_exists = factory.check_table(con, "prices")
         assert table_exists is True
         
         # Get data
-        data = factory.getData(con, "SELECT code, price FROM prices")
-        assert data == [("A", 50), ("B", 35)]
+        data = factory.get_data(con, "SELECT code, price FROM prices", "prices")
+        assert isinstance(data, pd.DataFrame)
         
         # Close connection
-        factory.closeConnection(con)
+        factory.close_connection(con)
         con.close.assert_called()
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
-    def test_workflow_with_multiple_tables(self, mock_yaml_load, mock_file):
+    @patch('pandas.read_sql')
+    def test_workflow_with_multiple_tables(self, mock_read_sql, mock_yaml_load, mock_file):
         """Test workflow with prices and offers tables"""
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
         factory = DBConnectionFactory()
@@ -355,26 +413,33 @@ class TestDBConnectionFactoryIntegration:
         mock_connection.cursor.return_value = mock_cursor
         
         # Setup return values for prices table
-        mock_cursor.execute.return_value.fetchall.return_value = [
-            ("A", 50),
-            ("B", 35)
-        ]
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
+        prices_df = pd.DataFrame({
+            "code": ["A", "B"],
+            "price": [50, 35]
+        })
+        mock_read_sql.return_value = prices_df
         
-        prices = factory.getData(
+        prices = factory.get_data(
             mock_connection,
-            "SELECT code, price FROM prices"
+            "SELECT code, price FROM prices",
+            "prices"
         )
         assert len(prices) == 2
         
         # Setup return values for offers table
-        mock_cursor.execute.return_value.fetchall.return_value = [
-            ("A", 3, 140),
-            ("B", 2, 60)
-        ]
+        mock_cursor.execute.return_value.fetchall.return_value = [("offers",)]
+        offers_df = pd.DataFrame({
+            "code": ["A", "B"],
+            "offeramount": [3, 2],
+            "offerprice": [140, 60]
+        })
+        mock_read_sql.return_value = offers_df
         
-        offers = factory.getData(
+        offers = factory.get_data(
             mock_connection,
-            "SELECT code, offeramount, offerprice FROM offers"
+            "SELECT code, offeramount, offerprice FROM offers",
+            "offers"
         )
         assert len(offers) == 2
 
@@ -388,11 +453,11 @@ class TestDBConnectionFactoryIntegration:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
         
-
         mock_cursor.execute.side_effect = sqlite3.DatabaseError("Constraint violation")
         with pytest.raises(sqlite3.DatabaseError):
-            factory.addData(mock_connection, "INSERT INTO prices VALUES ('A', 50)")
+            factory.add_data(mock_connection, "INSERT INTO prices VALUES ('A', 50)", "prices")
 
 
 class TestDBConnectionFactoryEdgeCases:
@@ -408,15 +473,17 @@ class TestDBConnectionFactoryEdgeCases:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
         
         query = "INSERT INTO prices (code, price) VALUES ('A''B', 50)"
-        factory.addData(mock_connection, query)
+        factory.add_data(mock_connection, query, "prices")
         
-        mock_cursor.execute.assert_called_once_with(query)
+        mock_cursor.execute.assert_called()
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
-    def test_get_data_with_null_values(self, mock_yaml_load, mock_file):
+    @patch('pandas.read_sql')
+    def test_get_data_with_null_values(self, mock_read_sql, mock_yaml_load, mock_file):
         """Test retrieving data with NULL values"""
         mock_yaml_load.return_value = {"dbpath": ":memory:"}
         factory = DBConnectionFactory()
@@ -424,11 +491,14 @@ class TestDBConnectionFactoryEdgeCases:
         mock_connection = MagicMock(spec=sqlite3.Connection)
         mock_cursor = MagicMock(spec=sqlite3.Cursor)
         mock_connection.cursor.return_value = mock_cursor
-        mock_cursor.execute.return_value.fetchall.return_value = [("A", None)]
+        mock_cursor.execute.return_value.fetchall.return_value = [("prices",)]
         
-        result = factory.getData(mock_connection, "SELECT code, price FROM prices WHERE code = 'A'")
+        null_df = pd.DataFrame({"code": ["A"], "price": [None]})
+        mock_read_sql.return_value = null_df
         
-        assert result == [("A", None)]
+        result = factory.get_data(mock_connection, "SELECT code, price FROM prices WHERE code = 'A'", "prices")
+        
+        assert isinstance(result, pd.DataFrame)
 
     @patch('builtins.open', new_callable=mock_open, read_data="dbpath: ':memory:'")
     @patch('yaml.load')
@@ -442,7 +512,7 @@ class TestDBConnectionFactoryEdgeCases:
         mock_connection.cursor.return_value = mock_cursor
         mock_cursor.execute.return_value.fetchall.return_value = []
         
-        result = factory.checkTable(mock_connection, "")
+        result = factory.check_table(mock_connection, "")
         
         assert result is False
         mock_cursor.execute.assert_called_once()

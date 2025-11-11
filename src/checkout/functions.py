@@ -13,7 +13,6 @@ async def get_total(item: CheckoutItem) -> int:
     if item_data.empty:
         logger.debug(f"No item data for {item}, returning 0")
         return 0
-    print(item_data)
     item_total = calculate_total(item_data=item_data, quant=item.quantity)
     return item_total
 

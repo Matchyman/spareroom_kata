@@ -3,10 +3,12 @@ from main import app
 
 
 def test_root():
+    """Test root endpoint returns API running message"""
     client = TestClient(app)
     r = client.get("/")
     assert r.status_code == 200
     assert r.json() == {"message": "API is running"}
+
 
 
 
