@@ -1,6 +1,7 @@
 from pydantic import BaseModel
-from src.dao.daoRoutines import DaoRoutines
+from src.dao.readDao import ReadDao
 from fastapi.logger import logger
+import pandas as pd
 
 class CheckoutItem(BaseModel):
     code: str = ""
@@ -8,8 +9,8 @@ class CheckoutItem(BaseModel):
 
 #Orchestrator Function
 async def get_total(item: CheckoutItem) -> int:
-    item_data = await get_item_data(item_code=item.code.lower())
-    if not item_data:
+    item_data = await get_item_data(item_code=item.code)
+    if item_data.empty:
         logger.debug(f"No item data for {item}, returning 0")
         return 0
     print(item_data)
@@ -19,19 +20,21 @@ async def get_total(item: CheckoutItem) -> int:
 async def get_item_data(item_code:str="") -> dict:
     if not item_code:
         return {}
-    return await DaoRoutines().get_data_by_item(primary_key=item_code)
+    return await ReadDao().get_item_and_offer(table ='prices', column='code', value=item_code)
 
-def calculate_total(item_data:dict, quant:int) -> int:
-    offer_data = item_data.get("offer")
-    if not offer_data:
-        return item_data.get("price") * quant
+def calculate_total(item_data, quant:int) -> int:
+    offer_amount = item_data["amount"].item()
+    offer_value = item_data["offerprice"].item()
+    if not offer_amount and not offer_value:
+        return item_data['price'].item() * quant
     return calculate_total_with_offer (item_data=item_data, quant=quant)
 
 def calculate_total_with_offer(item_data:dict, quant: int) -> int:
-    offer_data = item_data.get("offer")
+    offer_amount = item_data["amount"].item()
+    offer_value = item_data["offerprice"].item()
     total = 0
-    while quant >= offer_data.get("amount"):
-        total += offer_data.get("price")
-        quant -= offer_data.get("amount")
-    total += item_data.get("price") * quant
+    while quant >= offer_amount:
+        total += offer_value
+        quant -= offer_amount
+    total += item_data["price"].item() * quant
     return total

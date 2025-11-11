@@ -1,4 +1,6 @@
 from src.database.dbConnectionFactory import DBConnectionFactory
+import json
+import pandas as pd
 
 
 class ReadDao:
@@ -20,15 +22,16 @@ class ReadDao:
         self.dao.close_connection()
         return data
     
-    def get_item_and_offer(self, table:str, column:str, value:str):
+    async def get_item_and_offer(self, table:str, column:str, value:str):
         connection = self.dao.connect()
         query = f"""SELECT prices.code, prices.price, offers.amount, offers.offerprice 
                     FROM {table} 
                     LEFT JOIN offers 
                     ON prices.code = offers.code
                     WHERE {table}.{column} = '{value}'"""
-        data = self.dao.get_data(con=connection, query=query)
-        self.dao.close_connection()
+        
+        data = self.dao.get_data(con=connection, query=query, table = table)
+        self.dao.close_connection(con = connection)
         return data
     
     

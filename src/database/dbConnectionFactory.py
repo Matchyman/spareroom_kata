@@ -1,6 +1,7 @@
 import sqlite3
 import yaml
 import logging
+import pandas as pd
 from yaml.loader import SafeLoader
 
 class DBConnectionFactory:
@@ -17,7 +18,7 @@ class DBConnectionFactory:
             con = sqlite3.connect(self.dbpath)
             return con
         except sqlite3.OperationalError as ce:
-            self.logger.warning(f"WARNING: No connection made with DB: {self.config.get('dbpath')}, Error: {ce}")
+            self.logger.warning(f"WARNING: No connection made with DB: {self.dbpath}, Error: {ce}")
         except Exception as e:
             self.logger.error(f"ERROR: {e} in dbConnectionFactory - connect function")
             
@@ -40,10 +41,10 @@ class DBConnectionFactory:
             return False
         return True
 
-    def get_data(self, con:sqlite3.Connection, query):
-        cur = con.cursor()
-        res = cur.execute(query)
-        return res.fetchall()
+    def get_data(self, con:sqlite3.Connection, query:str, table:str):
+        if not self.check_table(con=con, table=table):
+            raise sqlite3.DatabaseError(f"No table found for : {table}")
+        return pd.read_sql(sql=query, con=con)
     
     def close_connection(self, con:sqlite3.Connection):
         con.close()
