@@ -1,19 +1,22 @@
 from pydantic import BaseModel
-from src.dao.readDao import ReadDao
+from src.backend.dao.readDao import ReadDao
 from fastapi.logger import logger
-import pandas as pd
 
 class CheckoutItem(BaseModel):
     code: str = ""
-    quantity: int = 0
+    quant: int = 0
 
+async def get_all_prices(table = "prices"):
+    price_data = await ReadDao().get_all_items(table=table)
+    return price_data
+    
 #Orchestrator Function
 async def get_total(item: CheckoutItem) -> int:
     item_data = await get_item_data(item_code=item.code)
     if item_data.empty:
         logger.debug(f"No item data for {item}, returning 0")
         return 0
-    item_total = calculate_total(item_data=item_data, quant=item.quantity)
+    item_total = calculate_total(item_data=item_data, quant=item.quant)
     return item_total
 
 async def get_item_data(item_code:str="") -> dict:
@@ -37,3 +40,4 @@ def calculate_total_with_offer(item_data:dict, quant: int) -> int:
         quant -= offer_amount
     total += item_data["price"].item() * quant
     return total
+

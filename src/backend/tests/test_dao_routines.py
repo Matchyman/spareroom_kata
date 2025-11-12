@@ -1,5 +1,5 @@
 import pytest
-from src.dao.daoRoutines import DaoRoutines
+from src.backend.dao.daoRoutines import DaoRoutines
 
 
 @pytest.mark.asyncio

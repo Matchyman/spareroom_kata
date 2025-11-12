@@ -2,7 +2,7 @@ import pytest
 import sqlite3
 import pandas as pd
 from unittest.mock import MagicMock, patch, mock_open
-from src.database.dbConnectionFactory import DBConnectionFactory
+from src.backend.database.dbConnectionFactory import DBConnectionFactory
 
 
 class TestDBConnectionFactoryInit:

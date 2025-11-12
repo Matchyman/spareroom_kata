@@ -1,1 +1,1 @@
-dbpath: ".\\src\\database\\shoppingitems.db"
+dbpath: ".\\src\\backend\\database\\shoppingitems.db"

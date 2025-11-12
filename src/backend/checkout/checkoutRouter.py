@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.logger import logger
-from src.checkout.functions import CheckoutItem, get_total
+from src.backend.checkout.functions import CheckoutItem, get_total, get_all_prices
 
 router = APIRouter(
     prefix = "/checkout",
@@ -17,6 +17,10 @@ def check_route() -> dict:
     """
     return {"message": "Checkout Route is working"}
 
+@router.get("/")
+async def get_prices() -> list[dict]:
+    return await get_all_prices()
+
 @router.post("/")
 async def checkout(items:list[CheckoutItem]) -> dict:
     """
@@ -31,5 +35,5 @@ async def checkout(items:list[CheckoutItem]) -> dict:
     subtotal = 0
     for item in items:
         subtotal += await get_total(item)
-        logger.info(f"Code: {item.code}, Quant:{item.quantity}")
+        logger.info(f"Code: {item.code}, Quant:{item.quant}")
     return {"message": "Checkout complete", "total": subtotal}

@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 from unittest.mock import AsyncMock, patch, MagicMock
-from src.checkout.functions import get_item_data, CheckoutItem, get_total, calculate_total, calculate_total_with_offer
+from src.backend.checkout.functions import get_item_data, CheckoutItem, get_total, calculate_total, calculate_total_with_offer
 
 
 @pytest.mark.asyncio

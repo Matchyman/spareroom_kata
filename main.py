@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 import sys
-from src.checkout import checkoutRouter
+from src.backend.checkout import checkoutRouter
 
 app = FastAPI()
 
