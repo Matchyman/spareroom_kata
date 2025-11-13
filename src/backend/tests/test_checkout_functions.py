@@ -11,7 +11,7 @@ async def test_get_item_data_empty():
 
 
 @pytest.mark.asyncio
-@patch('src.checkout.functions.ReadDao')
+@patch('src.backend.checkout.functions.ReadDao')
 async def test_get_item_data_existing(mock_read_dao):
     """Test get_item_data returns DataFrame with price"""
     mock_dao_instance = MagicMock()
@@ -34,13 +34,13 @@ async def test_get_item_data_existing(mock_read_dao):
 
 @pytest.mark.asyncio
 async def test_get_total_unknown():
-    item = CheckoutItem(code="x", quantity=1)
+    item = CheckoutItem(code="x", quant=1)
     total = await get_total(item)
     assert total == 0
 
 
 @pytest.mark.asyncio
-@patch('src.checkout.functions.ReadDao')
+@patch('src.backend.checkout.functions.ReadDao')
 async def test_get_total_known(mock_read_dao):
     """Test get_total with known item 'a'"""
     mock_dao_instance = MagicMock()
@@ -54,13 +54,13 @@ async def test_get_total_known(mock_read_dao):
     })
     mock_dao_instance.get_item_and_offer = AsyncMock(return_value=mock_df)
     
-    item = CheckoutItem(code="a", quantity=1)
+    item = CheckoutItem(code="a", quant=1)
     total = await get_total(item)
     assert total == 50
 
 
 @pytest.mark.asyncio
-@patch('src.checkout.functions.ReadDao')
+@patch('src.backend.checkout.functions.ReadDao')
 async def test_get_total_with_offer(mock_read_dao):
     """Test item 'a' with quantity for special offer (3 items)"""
     mock_dao_instance = MagicMock()
@@ -74,13 +74,13 @@ async def test_get_total_with_offer(mock_read_dao):
     })
     mock_dao_instance.get_item_and_offer = AsyncMock(return_value=mock_df)
     
-    item = CheckoutItem(code="a", quantity=3)
+    item = CheckoutItem(code="a", quant=3)
     total = await get_total(item)
     assert total == 140
 
 
 @pytest.mark.asyncio
-@patch('src.checkout.functions.ReadDao')
+@patch('src.backend.checkout.functions.ReadDao')
 async def test_get_total_with_offer_and_remainder(mock_read_dao):
     """Test item 'a' with quantity more than offer (4 items = 1 offer + 1 regular)"""
     mock_dao_instance = MagicMock()
@@ -94,13 +94,13 @@ async def test_get_total_with_offer_and_remainder(mock_read_dao):
     })
     mock_dao_instance.get_item_and_offer = AsyncMock(return_value=mock_df)
     
-    item = CheckoutItem(code="a", quantity=4)
+    item = CheckoutItem(code="a", quant=4)
     total = await get_total(item)
     assert total == 190  # 140 for 3 items + 50 for 1 item
 
 
 @pytest.mark.asyncio
-@patch('src.checkout.functions.ReadDao')
+@patch('src.backend.checkout.functions.ReadDao')
 async def test_get_total_with_multiple_offers(mock_read_dao):
     """Test item 'a' with quantity for multiple offers (6 items = 2 offers)"""
     mock_dao_instance = MagicMock()
@@ -114,13 +114,13 @@ async def test_get_total_with_multiple_offers(mock_read_dao):
     })
     mock_dao_instance.get_item_and_offer = AsyncMock(return_value=mock_df)
     
-    item = CheckoutItem(code="a", quantity=6)
+    item = CheckoutItem(code="a", quant=6)
     total = await get_total(item)
     assert total == 280  # 140 + 140
 
 
 @pytest.mark.asyncio
-@patch('src.checkout.functions.ReadDao')
+@patch('src.backend.checkout.functions.ReadDao')
 async def test_get_total_item_without_offer(mock_read_dao):
     """Test item 'c' which has no special offer"""
     mock_dao_instance = MagicMock()
@@ -134,7 +134,7 @@ async def test_get_total_item_without_offer(mock_read_dao):
     })
     mock_dao_instance.get_item_and_offer = AsyncMock(return_value=mock_df)
     
-    item = CheckoutItem(code="c", quantity=3)
+    item = CheckoutItem(code="c", quant=3)
     total = await get_total(item)
     assert total == 75  # 25 * 3
 

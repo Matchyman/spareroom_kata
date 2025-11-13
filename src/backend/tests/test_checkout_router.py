@@ -11,14 +11,14 @@ def test_check_health():
     assert r.json() == {"message": "Checkout Route is working"}
 
 
-@patch('src.checkout.functions.ReadDao')
+@patch('src.backend.checkout.functions.ReadDao')
 def test_checkout_post(mock_read_dao):
     """Test checkout POST with mocked ReadDao"""
     mock_dao_instance = MagicMock()
     mock_read_dao.return_value = mock_dao_instance
     
     mock_df = pd.DataFrame({
-        'code': ['a'],
+        'code': ['A'],
         'price': [50],
         'amount': [3],
         'offerprice': [140]
@@ -26,7 +26,7 @@ def test_checkout_post(mock_read_dao):
     mock_dao_instance.get_item_and_offer = AsyncMock(return_value=mock_df)
     
     client = TestClient(app)
-    payload = [{"code": "a", "quantity": 1}]
+    payload = [{"code": "A", "quant": 1}]
     r = client.post("/checkout/", json=payload)
     assert r.status_code == 200
     data = r.json()

@@ -5,7 +5,7 @@ import asyncio
 class DaoRoutines:
     
     def __init__(self):
-        with open("src\dao\pricing.json", "r") as f:
+        with open("src\\backend\\dao\\pricing.json", "r") as f:
             self.data = json.load(f)
     
     async def get_data(self):
