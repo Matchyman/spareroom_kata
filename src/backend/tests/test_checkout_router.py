@@ -32,4 +32,45 @@ def test_checkout_post(mock_read_dao):
     data = r.json()
     assert data["message"] == "Checkout complete"
     assert data["total"] == 50
-
+    
+@patch('src.backend.checkout.functions.ReadDao')
+def test_prices_get(mock_read_dao):
+    """Test prices GET with mocked ReadDao"""
+    mock_dao_instance = MagicMock()
+    mock_read_dao.return_value = mock_dao_instance
+    
+    return_value = [{
+        "id": "1",
+        "code": "B",
+        "value": 40
+    }]
+    
+    mock_dao_instance.get_all_items = AsyncMock(return_value= return_value)
+    
+    client = TestClient(app)
+    r = client.get("/checkout/prices")
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 4
+    
+@patch('src.backend.checkout.functions.ReadDao')
+def test_prices_get(mock_read_dao):
+    """Test prices GET with mocked ReadDao"""
+    mock_dao_instance = MagicMock()
+    mock_read_dao.return_value = mock_dao_instance
+    
+    return_value = [{
+        "id": "1",
+        "code": "B",
+        "amount":3,
+        "offerprice": 70
+    }]
+    
+    mock_dao_instance.get_all_items = AsyncMock(return_value= return_value)
+    
+    client = TestClient(app)
+    r = client.get("/checkout/offers")
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 2
+    
