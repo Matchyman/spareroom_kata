@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.logger import logger
-from src.backend.checkout.functions import CheckoutItem, get_total, get_all_prices
+from src.backend.checkout.functions import CheckoutItem, get_total, get_all_prices, get_all_offers
 
 router = APIRouter(
     prefix = "/checkout",
