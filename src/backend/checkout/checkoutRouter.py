@@ -26,7 +26,16 @@ async def get_prices() -> list[dict]:
     return price_data
 
 @router.get("/prices/{priceid}")
-async def get_price_with_id(priceid:int):
+async def get_price_with_id(priceid:int) -> list[dict]:
+    """
+    Get single offer from offer table
+    
+    Input:
+        priceid: int -> id offer you want to retrieve
+        
+    Returns:
+        item: list[dict] -> the item
+    """
     price_data = await ReadDao().get_single_item(table="prices", column="id", value=str(priceid))
     return price_data
 
@@ -37,7 +46,16 @@ async def get_offers() -> list[dict]:
     return offer_data
 
 @router.get("/offer/{offerid}")
-async def get_offer_with_id(offerid:int):
+async def get_offer_with_id(offerid:int) -> list[dict]:
+    """
+    Get single offer from offer table
+    
+    Input:
+        offerid: int -> id offer you want to retrieve
+        
+    Returns:
+        offer: list[dict] -> the offer
+    """
     offer_data = await ReadDao().get_single_item(table="offers", column="id", value=str(offerid))
     return offer_data
 
