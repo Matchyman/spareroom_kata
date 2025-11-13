@@ -39,7 +39,7 @@ class TestDBConnectionFactoryInit:
         factory = DBConnectionFactory()
         
         # Verify file was opened with correct parameters
-        mock_file.assert_called_once_with("config\\config.yml", "r")
+        mock_file.assert_called_once_with("./config/config.yml", "r")
 
 
 class TestDBConnectionConnect:

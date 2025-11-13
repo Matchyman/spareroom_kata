@@ -3,8 +3,8 @@ interface BasketItem {
   quant: number
 }
 
-export async function getItems(){
-    const response = await fetch("http://localhost:8000/checkout/")
+export async function getPrices(){
+    const response = await fetch("http://localhost:8000/checkout/prices")
     if (!response.ok){
         throw new Error("Failed to get items")
     }

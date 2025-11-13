@@ -9,6 +9,10 @@ class CheckoutItem(BaseModel):
 async def get_all_prices(table = "prices"):
     price_data = await ReadDao().get_all_items(table=table)
     return price_data
+
+async def get_all_offers(table = "offers"):
+    offer_data = await ReadDao.get_all_items(table=table)
+    return offer_data
     
 #Orchestrator Function
 async def get_total(item: CheckoutItem) -> int:

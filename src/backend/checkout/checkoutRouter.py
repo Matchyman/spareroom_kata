@@ -17,9 +17,13 @@ def check_route() -> dict:
     """
     return {"message": "Checkout Route is working"}
 
-@router.get("/")
+@router.get("/prices")
 async def get_prices() -> list[dict]:
     return await get_all_prices()
+
+@router.get("/offers")
+async def get_offers() -> list[dict]:
+    return await get_all_offers()
 
 @router.post("/")
 async def checkout(items:list[CheckoutItem]) -> dict:

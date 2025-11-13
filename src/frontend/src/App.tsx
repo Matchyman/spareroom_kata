@@ -1,5 +1,5 @@
 import './App.css'
-import {getItems, postBasket} from './checkout.tsx'
+import {getPrices, postBasket} from './checkout.tsx'
 import {useEffect, useState} from 'react'
 
 interface Item {
@@ -57,7 +57,7 @@ function App() {
   }
   
   useEffect(() => {
-    getItems().then(setItems)
+    getPrices().then(setItems)
   }, [])
   
   return (
