@@ -13,9 +13,9 @@ def root():
 
 def main(args = ""):
     if args == "prod":
-        uvicorn.run("main:app", host="localhost", port=8000, reload=True, log_config="config\prod_log_conf.yml")
+        uvicorn.run("main:app", host="localhost", port=8000, reload=True, log_config="./config/prod_log_conf.yml")
     else:
-        uvicorn.run("main:app", host="localhost", port=8000, reload=True, log_config="config\dev_log_conf.yml")
+        uvicorn.run("main:app", host="localhost", port=8000, reload=True, log_config="./config/dev_log_conf.yml")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

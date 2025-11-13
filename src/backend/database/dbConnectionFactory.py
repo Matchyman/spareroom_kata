@@ -8,7 +8,7 @@ class DBConnectionFactory:
     
     def __init__(self):
         self.config = {}
-        with open("config\\config.yml", "r") as file:
+        with open("./config/config.yml", "r") as file:
             self.config = yaml.load(file, Loader=SafeLoader)
         self.logger = logging.getLogger()
         self.dbpath = self.config.get("dbpath")
