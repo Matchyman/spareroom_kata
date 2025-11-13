@@ -5,14 +5,6 @@ from fastapi.logger import logger
 class CheckoutItem(BaseModel):
     code: str = ""
     quant: int = 0
-
-async def get_all_prices(table = "prices"):
-    price_data = await ReadDao().get_all_items(table=table)
-    return price_data
-
-async def get_all_offers(table = "offers"):
-    offer_data = await ReadDao.get_all_items(table=table)
-    return offer_data
     
 #Orchestrator Function
 async def get_total(item: CheckoutItem) -> int:
@@ -26,13 +18,13 @@ async def get_total(item: CheckoutItem) -> int:
 async def get_item_data(item_code:str="") -> dict:
     if not item_code:
         return {}
-    return await ReadDao().get_item_and_offer(table ='prices', column='code', value=item_code)
+    return await ReadDao().get_item_and_offer(table ="prices", column="code", value=item_code)
 
 def calculate_total(item_data, quant:int) -> int:
     offer_amount = item_data["amount"].item()
     offer_value = item_data["offerprice"].item()
     if not offer_amount and not offer_value:
-        return item_data['price'].item() * quant
+        return item_data["price"].item() * quant
     return calculate_total_with_offer (item_data=item_data, quant=quant)
 
 def calculate_total_with_offer(item_data:dict, quant: int) -> int:

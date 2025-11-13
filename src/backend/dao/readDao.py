@@ -20,7 +20,7 @@ class ReadDao:
         query = f"SELECT * from {table} WHERE {column} = '{value}'"
         data = self.dao.get_data(con=connection, query=query, table=table)
         self.dao.close_connection(con =connection)
-        return data.to_json(orient="records")
+        return json.loads(data.to_json(orient="records"))
     
     async def get_item_and_offer(self, table:str, column:str, value:str):
         connection = self.dao.connect()
@@ -34,3 +34,10 @@ class ReadDao:
         self.dao.close_connection(con = connection)
         return data
     
+    
+def main():
+    bob = ReadDao().get_single_item(table="prices", column="id", value="1")
+    print(bob)
+    
+if __name__ == "__main__":
+    main()

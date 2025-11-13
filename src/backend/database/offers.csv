@@ -1,3 +1,3 @@
-code,amount,offerprice
-A,3,140
-B,2,60
+id,code,amount,offerprice
+1,A,3,140
+2,B,2,60

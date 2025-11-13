@@ -1,5 +1,5 @@
-code,price
-A,50
-B,35
-C,25
-D,12
+id,code,price
+1,A,50
+2,B,35
+3,C,25
+4,D,12
