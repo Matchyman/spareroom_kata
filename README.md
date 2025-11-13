@@ -28,3 +28,8 @@ npm run will start frontend
 Database is SQLite db, if you wish to change the data, change csv's located in src/backend/database
 
 Delete db and run db_setup.py
+
+
+
+## Documention:
+When starting the backend services, should open to localhost:8000, you will find api documentation at localhost:8000/docs
