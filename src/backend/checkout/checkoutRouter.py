@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, status
 from fastapi.logger import logger
 from src.backend.dao.readDao import ReadDao
 from src.backend.checkout.functions import CheckoutItem, get_total
@@ -20,13 +20,17 @@ def check_route() -> dict:
     return {"message": "Checkout Route is working"}
 
 @router.get("/prices")
-async def get_prices() -> list[dict]:
+async def get_prices(response: Response) -> list[dict]:
     "Gets all prices from prices table"
-    price_data = await ReadDao().get_all_items(table="prices")
-    return price_data
+    try:
+        price_data = await ReadDao().get_all_items(table="prices")
+        return price_data
+    except Exception as e:
+        response.status_code = 404
+        return [{"message": f"Exception  - {e}"}]
 
 @router.get("/prices/{priceid}")
-async def get_price_with_id(priceid:int) -> list[dict]:
+async def get_price_with_id(priceid:int, response:Response) -> list[dict]:
     """
     Get single offer from offer table
     
@@ -36,17 +40,27 @@ async def get_price_with_id(priceid:int) -> list[dict]:
     Returns:
         item: list[dict] -> the item
     """
-    price_data = await ReadDao().get_single_item(table="prices", column="id", value=str(priceid))
-    return price_data
+    try:
+        price_data = await ReadDao().get_single_item(table="prices", column="id", value=str(priceid))
+        return price_data
+    except Exception as e:
+        response.status_code = 404
+        return [{"message": f"Exception  - {e}"}]
+        
 
 @router.get("/offers")
-async def get_offers() -> list[dict]:
+async def get_offers(response: Response) -> list[dict]:
     "Gets all offers from offers table"
-    offer_data = await ReadDao().get_all_items(table="offers")
-    return offer_data
+    try:
+        offer_data = await ReadDao().get_all_items(table="offers")
+
+        return offer_data
+    except Exception as e:
+        response.status_code = 404
+        return [{"message": f"Exception  - {e}"}]
 
 @router.get("/offer/{offerid}")
-async def get_offer_with_id(offerid:int) -> list[dict]:
+async def get_offer_with_id(offerid:int, response: Response) -> list[dict]:
     """
     Get single offer from offer table
     
@@ -56,11 +70,15 @@ async def get_offer_with_id(offerid:int) -> list[dict]:
     Returns:
         offer: list[dict] -> the offer
     """
-    offer_data = await ReadDao().get_single_item(table="offers", column="id", value=str(offerid))
-    return offer_data
+    try:
+        offer_data = await ReadDao().get_single_item(table="offers", column="id", value=str(offerid))
+        return offer_data
+    except Exception as e:
+        response.status_code = 404
+        return [{"message": f"Exception - {e}"}]
 
 @router.post("/")
-async def checkout(items:list[CheckoutItem]) -> dict:
+async def checkout(items:list[CheckoutItem], response:Response) -> dict:
     """
     Takes checkout list and returns a subtotal
     
@@ -71,7 +89,11 @@ async def checkout(items:list[CheckoutItem]) -> dict:
         int: subtotal of items
     """
     subtotal = 0
-    for item in items:
-        subtotal += await get_total(item)
-        logger.info(f"Code: {item.code}, Quant:{item.quant}")
-    return {"message": "Checkout complete", "total": subtotal}
+    try:
+        for item in items:
+            subtotal += await get_total(item)
+            logger.info(f"Code: {item.code}, Quant:{item.quant}")
+        return {"message": "Checkout complete", "total": subtotal}
+    except Exception as e:
+        response.status_code = 400
+        return [{"message": f"Execption - {e}"}]
